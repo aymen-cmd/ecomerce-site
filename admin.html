@@ -151,23 +151,31 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        const SUPABASE_URL = 'https://tsqwsiqbhnxlkexkbpzx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_B41-ulTCnWxIATH0nedOkg_tZsMl_qE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let all = [];
         let filtered = [];
         let page = 1;
         const perPage = 6;
 
         window.addEventListener('load', () => {
-            all = JSON.parse(localStorage.getItem('portfolio')) || [
-                { title: 'Design Logo', category: 'Design Graphique', description: 'Logo professionnel' },
-                { title: 'T-shirt Custom', category: 'Impression Textiles', description: 'T-shirt personnalisé' }
-            ];
-            filtered = all;
-            renderCats();
+            loadPortfolio();
             renderAbout();
             renderServices();
-            render();
         });
+
+        function loadPortfolio() {
+            supabase.from('portfolio').select('*').then(({ data, error }) => {
+                if (error) console.error(error);
+                all = data || [];
+                filtered = all;
+                render();
+            });
+        }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
