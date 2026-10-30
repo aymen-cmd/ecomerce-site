@@ -119,25 +119,10 @@
             .hero { padding: 80px 20px; }
             .hero h1 { font-size: 36px; }
             section h2 { font-size: 32px; }
-            nav { gap: 15px; font-size: 14px; }
+            nav { gap: 20px; }
             .gallery { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
             .item-img { height: 300px; }
             .modal-img { height: 350px; }
-            section { padding: 60px 15px; }
-        }
-
-        @media (max-width: 480px) {
-            header .container { flex-direction: column; gap: 15px; }
-            .logo { font-size: 24px; }
-            nav { gap: 10px; flex-wrap: wrap; font-size: 12px; }
-            .hero h1 { font-size: 28px; }
-            section h2 { font-size: 24px; }
-            .gallery { grid-template-columns: 1fr; }
-            .item-img { height: 250px; }
-            .modal-img { height: 300px; }
-            .services-grid { grid-template-columns: 1fr; }
-            .contact-items { grid-template-columns: 1fr; }
-            section { padding: 40px 15px; }
         }
     </style>
 </head>
@@ -291,12 +276,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const SUPABASE_URL = 'https://tsqwsiqbhnxlkexkbpzx.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_B41-ulTCnWxIATH0nedOkg_tZsMl_qE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         let allItems = [];
         let filteredItems = [];
         let currentPage = 1;
@@ -310,13 +290,10 @@
         });
 
         function loadData() {
-            supabase.from('portfolio').select('*').then(({ data, error }) => {
-                if (error) console.error(error);
-                allItems = data || [];
-                filteredItems = allItems;
-                renderFilters();
-                renderGallery();
-            });
+            allItems = JSON.parse(localStorage.getItem('portfolio')) || [];
+            filteredItems = allItems;
+            renderFilters();
+            renderGallery();
         }
 
         function renderFilters() {
@@ -329,14 +306,17 @@
             allBtn.onclick = () => { currentFilter = 'all'; currentPage = 1; filterGallery(); renderFilters(); renderGallery(); };
             filterDiv.appendChild(allBtn);
 
+            const categories = JSON.parse(localStorage.getItem('categories')) || [];
             const usedCats = [...new Set(allItems.map(i => i.category))];
 
-            usedCats.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.textContent = cat;
-                btn.className = currentFilter === cat ? 'active' : '';
-                btn.onclick = () => { currentFilter = cat; currentPage = 1; filterGallery(); renderFilters(); renderGallery(); };
-                filterDiv.appendChild(btn);
+            categories.forEach(cat => {
+                if (usedCats.includes(cat)) {
+                    const btn = document.createElement('button');
+                    btn.textContent = cat;
+                    btn.className = currentFilter === cat ? 'active' : '';
+                    btn.onclick = () => { currentFilter = cat; currentPage = 1; filterGallery(); renderFilters(); renderGallery(); };
+                    filterDiv.appendChild(btn);
+                }
             });
         }
 
@@ -369,13 +349,17 @@
             const end = start + itemsPerPage;
             const pageItems = filteredItems.slice(start, end);
 
-            pageItems.forEach((item) => {
+            pageItems.forEach((item, idx) => {
+                const realIdx = allItems.indexOf(item);
                 const div = document.createElement('div');
                 div.className = 'item';
-                div.onclick = () => openModal(item.id);
+                div.onclick = () => openModal(realIdx);
+
+                const imgKey = `portfolio_image_${realIdx}`;
+                const imgData = localStorage.getItem(imgKey);
 
                 div.innerHTML = `
-                    <div class="item-img">${item.image_data ? `<img src="${item.image_data}">` : ''}</div>
+                    <div class="item-img">${imgData ? `<img src="${imgData}">` : ''}</div>
                     <div class="item-info">
                         <div class="item-title">${item.title}</div>
                         <div class="item-cat">${item.category}</div>
@@ -402,14 +386,15 @@
             }
         }
 
-        function openModal(id) {
-            const item = allItems.find(i => i.id === id);
-            if (!item) return;
+        function openModal(idx) {
+            const item = allItems[idx];
+            const imgKey = `portfolio_image_${idx}`;
+            const imgData = localStorage.getItem(imgKey);
 
             document.getElementById('modalTitle').textContent = item.title;
             document.getElementById('modalCat').textContent = item.category;
             document.getElementById('modalDesc').textContent = item.description;
-            document.getElementById('modalImg').innerHTML = item.image_data ? `<img src="${item.image_data}">` : '';
+            document.getElementById('modalImg').innerHTML = imgData ? `<img src="${imgData}">` : '';
 
             document.getElementById('modal').classList.add('show');
         }
@@ -424,59 +409,33 @@
         }
 
         function loadAbout() {
-            supabase.from('about').select('*').limit(1).then(({ data, error }) => {
-                if (error || !data || data.length === 0) {
-                    const defaults = {
-                        title: 'Votre Partenaire en Communication',
-                        desc1: 'Avec 14 ans d\'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.',
-                        desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
-                        desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
-                    };
-                    document.getElementById('aboutTitle').textContent = defaults.title;
-                    document.getElementById('aboutDesc1').textContent = defaults.desc1;
-                    document.getElementById('aboutDesc2').textContent = defaults.desc2;
-                    document.getElementById('aboutDesc3').textContent = defaults.desc3;
-                    return;
-                }
-                const about = data[0];
-                document.getElementById('aboutTitle').textContent = about.title;
-                document.getElementById('aboutDesc1').textContent = about.desc1;
-                document.getElementById('aboutDesc2').textContent = about.desc2;
-                document.getElementById('aboutDesc3').textContent = about.desc3;
-                if (about.image_data) {
-                    document.querySelector('.about-image').innerHTML = `<img src="${about.image_data}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
-                }
-            });
+            const about = JSON.parse(localStorage.getItem('about')) || {
+                title: 'Votre Partenaire en Communication',
+                desc1: 'Avec 14 ans d\'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.',
+                desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
+                desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
+            };
+            document.getElementById('aboutTitle').textContent = about.title;
+            document.getElementById('aboutDesc1').textContent = about.desc1;
+            document.getElementById('aboutDesc2').textContent = about.desc2;
+            document.getElementById('aboutDesc3').textContent = about.desc3;
         }
 
         function loadServices() {
-            supabase.from('services').select('*').order('service_number', { ascending: true }).then(({ data, error }) => {
-                if (error || !data || data.length === 0) {
-                    const defaults = [
-                        { title: '🎨 Design Graphique', desc: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
-                        { title: '👕 T-shirts Personnalisés', desc: 'Impression de vêtements haute qualité avec vos designs. Parfait pour l\'événementiel, le branding, et les cadeaux d\'entreprise.' },
-                        { title: '📋 Panneaux Publicitaires', desc: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
-                        { title: '📢 Communication Visuelle', desc: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
-                    ];
-                    document.getElementById('service1Title').textContent = defaults[0].title;
-                    document.getElementById('service1Desc').textContent = defaults[0].desc;
-                    document.getElementById('service2Title').textContent = defaults[1].title;
-                    document.getElementById('service2Desc').textContent = defaults[1].desc;
-                    document.getElementById('service3Title').textContent = defaults[2].title;
-                    document.getElementById('service3Desc').textContent = defaults[2].desc;
-                    document.getElementById('service4Title').textContent = defaults[3].title;
-                    document.getElementById('service4Desc').textContent = defaults[3].desc;
-                    return;
-                }
-                document.getElementById('service1Title').textContent = data[0].title;
-                document.getElementById('service1Desc').textContent = data[0].description;
-                document.getElementById('service2Title').textContent = data[1].title;
-                document.getElementById('service2Desc').textContent = data[1].description;
-                document.getElementById('service3Title').textContent = data[2].title;
-                document.getElementById('service3Desc').textContent = data[2].description;
-                document.getElementById('service4Title').textContent = data[3].title;
-                document.getElementById('service4Desc').textContent = data[3].description;
-            });
+            const services = JSON.parse(localStorage.getItem('services')) || [
+                { title: '🎨 Design Graphique', desc: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
+                { title: '👕 T-shirts Personnalisés', desc: 'Impression de vêtements haute qualité avec vos designs. Parfait pour l\'événementiel, le branding, et les cadeaux d\'entreprise.' },
+                { title: '📋 Panneaux Publicitaires', desc: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
+                { title: '📢 Communication Visuelle', desc: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
+            ];
+            document.getElementById('service1Title').textContent = services[0].title;
+            document.getElementById('service1Desc').textContent = services[0].desc;
+            document.getElementById('service2Title').textContent = services[1].title;
+            document.getElementById('service2Desc').textContent = services[1].desc;
+            document.getElementById('service3Title').textContent = services[2].title;
+            document.getElementById('service3Desc').textContent = services[2].desc;
+            document.getElementById('service4Title').textContent = services[3].title;
+            document.getElementById('service4Desc').textContent = services[3].desc;
         }
 
         window.addEventListener('storage', () => {
