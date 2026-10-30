@@ -158,7 +158,10 @@
         const perPage = 6;
 
         window.addEventListener('load', () => {
-            all = JSON.parse(localStorage.getItem('portfolio')) || [];
+            all = JSON.parse(localStorage.getItem('portfolio')) || [
+                { title: 'Design Logo', category: 'Design Graphique', description: 'Logo professionnel' },
+                { title: 'T-shirt Custom', category: 'Impression Textiles', description: 'T-shirt personnalisé' }
+            ];
             filtered = all;
             renderCats();
             renderAbout();
