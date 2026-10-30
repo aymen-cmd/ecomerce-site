@@ -61,7 +61,6 @@
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('products')">Produits</button>
-            <button class="tab-btn" onclick="switchTab('categories')">Catégories</button>
             <button class="tab-btn" onclick="switchTab('about')">À Propos</button>
             <button class="tab-btn" onclick="switchTab('services')">Services</button>
         </div>
@@ -79,17 +78,15 @@
             <div class="pagination" id="pag"></div>
         </div>
 
-        <!-- CATEGORIES TAB -->
-        <div class="tab" id="categories">
-            <div class="form-group">
-                <label>Catégories (une par ligne)</label>
-                <textarea id="cats" placeholder="Cat 1&#10;Cat 2"></textarea>
-            </div>
-            <button class="success" onclick="saveCats()">💾 Enregistrer</button>
-        </div>
-
         <!-- ABOUT TAB -->
         <div class="tab" id="about">
+            <div class="form-group">
+                <label>Photo</label>
+                <div class="product-img" onclick="uploadAboutImage()" style="cursor: pointer; margin-bottom: 15px;">
+                    <img id="aboutImagePreview" src="" style="display: none;">
+                    <span id="aboutImagePlaceholder">📷 Cliquez pour ajouter une photo</span>
+                </div>
+            </div>
             <div class="form-group">
                 <label>Titre</label>
                 <input type="text" id="aboutTitle" placeholder="Votre Partenaire en Communication">
@@ -151,20 +148,31 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        const SUPABASE_URL = 'https://tsqwsiqbhnxlkexkbpzx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_B41-ulTCnWxIATH0nedOkg_tZsMl_qE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let all = [];
         let filtered = [];
         let page = 1;
         const perPage = 6;
 
         window.addEventListener('load', () => {
-            all = JSON.parse(localStorage.getItem('portfolio')) || [];
-            filtered = all;
-            renderCats();
+            loadPortfolio();
             renderAbout();
             renderServices();
-            render();
         });
+
+        function loadPortfolio() {
+            supabase.from('portfolio').select('*').then(({ data, error }) => {
+                if (error) console.error(error);
+                all = data || [];
+                filtered = all;
+                render();
+            });
+        }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -188,21 +196,18 @@
             const items = filtered.slice(start, start + perPage);
 
             items.forEach(item => {
-                const idx = all.indexOf(item);
-                const imgKey = `portfolio_image_${idx}`;
-                const img = localStorage.getItem(imgKey);
-                const cats = JSON.parse(localStorage.getItem('categories')) || [];
+                const usedCats = [...new Set(all.map(i => i.category))];
 
                 const el = document.createElement('div');
                 el.className = 'product';
                 el.innerHTML = `
-                    <div class="product-img" onclick="upload(${idx})">${img ? `<img src="${img}">` : '📷'}</div>
-                    <input type="text" value="${item.title}" onchange="upd(${idx}, 'title', this.value)">
-                    <select onchange="upd(${idx}, 'category', this.value)">
-                        ${cats.map(c => `<option ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
+                    <div class="product-img" onclick="upload(${item.id})">${item.image_data ? `<img src="${item.image_data}">` : '📷'}</div>
+                    <input type="text" value="${item.title}" onchange="upd(${item.id}, 'title', this.value)">
+                    <select onchange="upd(${item.id}, 'category', this.value)">
+                        ${usedCats.map(c => `<option ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
-                    <textarea onchange="upd(${idx}, 'description', this.value)">${item.description}</textarea>
-                    <button class="danger" onclick="del(${idx})">🗑️ Supprimer</button>
+                    <textarea onchange="upd(${item.id}, 'description', this.value)">${item.description}</textarea>
+                    <button class="danger" onclick="del(${item.id})">🗑️ Supprimer</button>
                 `;
                 div.appendChild(el);
             });
@@ -222,16 +227,15 @@
         }
 
         function addProduct() {
-            const cats = JSON.parse(localStorage.getItem('categories')) || ['Catégorie'];
-            all.push({ title: 'Nouveau', category: cats[0], description: 'Description' });
-            localStorage.setItem('portfolio', JSON.stringify(all));
-            msg();
-            filtered = all;
-            page = 1;
-            render();
+            const usedCats = [...new Set(all.map(i => i.category))];
+            const cat = usedCats.length > 0 ? usedCats[0] : 'Design';
+            supabase.from('portfolio').insert([{ title: 'Nouveau', category: cat, description: 'Description' }]).then(() => {
+                loadPortfolio();
+                msg();
+            });
         }
 
-        function upload(idx) {
+        function upload(id) {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
@@ -254,9 +258,10 @@
                             q -= 0.05;
                             data = canvas.toDataURL('image/jpeg', q);
                         }
-                        localStorage.setItem(`portfolio_image_${idx}`, data);
-                        msg();
-                        render();
+                        supabase.from('portfolio').update({ image_data: data }).eq('id', id).then(() => {
+                            loadPortfolio();
+                            msg();
+                        });
                     };
                     img.src = ev.target.result;
                 };
@@ -265,21 +270,19 @@
             input.click();
         }
 
-        function upd(idx, field, val) {
-            all[idx][field] = val;
-            localStorage.setItem('portfolio', JSON.stringify(all));
-            msg();
+        function upd(id, field, val) {
+            supabase.from('portfolio').update({ [field]: val }).eq('id', id).then(() => {
+                loadPortfolio();
+                msg();
+            });
         }
 
-        function del(idx) {
+        function del(id) {
             if (confirm('Supprimer?')) {
-                all.splice(idx, 1);
-                localStorage.setItem('portfolio', JSON.stringify(all));
-                localStorage.removeItem(`portfolio_image_${idx}`);
-                msg();
-                filtered = all;
-                page = 1;
-                render();
+                supabase.from('portfolio').delete().eq('id', id).then(() => {
+                    loadPortfolio();
+                    msg();
+                });
             }
         }
 
@@ -310,54 +313,128 @@
         }
 
         function renderAbout() {
-            const about = JSON.parse(localStorage.getItem('about')) || {
-                title: 'Votre Partenaire en Communication',
-                desc1: 'Avec 14 ans d\'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.',
-                desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
-                desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
+            supabase.from('about').select('*').limit(1).then(({ data, error }) => {
+                if (error || !data || data.length === 0) {
+                    const defaults = {
+                        title: 'Votre Partenaire en Communication',
+                        desc1: 'Avec 14 ans d\'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.',
+                        desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
+                        desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
+                    };
+                    document.getElementById('aboutTitle').value = defaults.title;
+                    document.getElementById('aboutDesc1').value = defaults.desc1;
+                    document.getElementById('aboutDesc2').value = defaults.desc2;
+                    document.getElementById('aboutDesc3').value = defaults.desc3;
+                    return;
+                }
+                const about = data[0];
+                document.getElementById('aboutTitle').value = about.title;
+                document.getElementById('aboutDesc1').value = about.desc1;
+                document.getElementById('aboutDesc2').value = about.desc2;
+                document.getElementById('aboutDesc3').value = about.desc3;
+                if (about.image_data) {
+                    document.getElementById('aboutImagePreview').src = about.image_data;
+                    document.getElementById('aboutImagePreview').style.display = 'block';
+                    document.getElementById('aboutImagePlaceholder').style.display = 'none';
+                }
+            });
+        }
+
+        function uploadAboutImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > 600) { h = (h * 600) / w; w = 600; }
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        let q = 0.6;
+                        let data = canvas.toDataURL('image/jpeg', q);
+                        while (data.length > 150 * 1024 && q > 0.3) {
+                            q -= 0.05;
+                            data = canvas.toDataURL('image/jpeg', q);
+                        }
+                        supabase.from('about').upsert([{ id: 1, image_data: data }]).then(() => {
+                            renderAbout();
+                            msg();
+                        });
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
             };
-            document.getElementById('aboutTitle').value = about.title;
-            document.getElementById('aboutDesc1').value = about.desc1;
-            document.getElementById('aboutDesc2').value = about.desc2;
-            document.getElementById('aboutDesc3').value = about.desc3;
+            input.click();
         }
 
         function saveAbout() {
             const about = {
+                id: 1,
                 title: document.getElementById('aboutTitle').value,
                 desc1: document.getElementById('aboutDesc1').value,
                 desc2: document.getElementById('aboutDesc2').value,
                 desc3: document.getElementById('aboutDesc3').value
             };
-            localStorage.setItem('about', JSON.stringify(about));
-            msg();
+            supabase.from('about').upsert([about]).then(() => {
+                msg();
+            });
         }
 
         function renderServices() {
-            const services = JSON.parse(localStorage.getItem('services')) || [
-                { title: '🎨 Design Graphique', desc: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
-                { title: '👕 T-shirts Personnalisés', desc: 'Impression de vêtements haute qualité avec vos designs. Parfait pour l\'événementiel, le branding, et les cadeaux d\'entreprise.' },
-                { title: '📋 Panneaux Publicitaires', desc: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
-                { title: '📢 Communication Visuelle', desc: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
-            ];
-            document.getElementById('service1Title').value = services[0].title;
-            document.getElementById('service1Desc').value = services[0].desc;
-            document.getElementById('service2Title').value = services[1].title;
-            document.getElementById('service2Desc').value = services[1].desc;
-            document.getElementById('service3Title').value = services[2].title;
-            document.getElementById('service3Desc').value = services[2].desc;
-            document.getElementById('service4Title').value = services[3].title;
-            document.getElementById('service4Desc').value = services[3].desc;
+            supabase.from('services').select('*').order('service_number', { ascending: true }).then(({ data, error }) => {
+                if (error || !data || data.length === 0) {
+                    const defaults = [
+                        { service_number: 1, title: '🎨 Design Graphique', description: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
+                        { service_number: 2, title: '👕 T-shirts Personnalisés', description: 'Impression de vêtements haute qualité avec vos designs. Parfait pour l\'événementiel, le branding, et les cadeaux d\'entreprise.' },
+                        { service_number: 3, title: '📋 Panneaux Publicitaires', description: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
+                        { service_number: 4, title: '📢 Communication Visuelle', description: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
+                    ];
+                    document.getElementById('service1Title').value = defaults[0].title;
+                    document.getElementById('service1Desc').value = defaults[0].description;
+                    document.getElementById('service2Title').value = defaults[1].title;
+                    document.getElementById('service2Desc').value = defaults[1].description;
+                    document.getElementById('service3Title').value = defaults[2].title;
+                    document.getElementById('service3Desc').value = defaults[2].description;
+                    document.getElementById('service4Title').value = defaults[3].title;
+                    document.getElementById('service4Desc').value = defaults[3].description;
+                    return;
+                }
+                document.getElementById('service1Title').value = data[0].title;
+                document.getElementById('service1Desc').value = data[0].description;
+                document.getElementById('service2Title').value = data[1].title;
+                document.getElementById('service2Desc').value = data[1].description;
+                document.getElementById('service3Title').value = data[2].title;
+                document.getElementById('service3Desc').value = data[2].description;
+                document.getElementById('service4Title').value = data[3].title;
+                document.getElementById('service4Desc').value = data[3].description;
+            });
         }
 
         function saveServices() {
             const services = [
-                { title: document.getElementById('service1Title').value, desc: document.getElementById('service1Desc').value },
-                { title: document.getElementById('service2Title').value, desc: document.getElementById('service2Desc').value },
-                { title: document.getElementById('service3Title').value, desc: document.getElementById('service3Desc').value },
-                { title: document.getElementById('service4Title').value, desc: document.getElementById('service4Desc').value }
+                { service_number: 1, title: document.getElementById('service1Title').value, description: document.getElementById('service1Desc').value },
+                { service_number: 2, title: document.getElementById('service2Title').value, description: document.getElementById('service2Desc').value },
+                { service_number: 3, title: document.getElementById('service3Title').value, description: document.getElementById('service3Desc').value },
+                { service_number: 4, title: document.getElementById('service4Title').value, description: document.getElementById('service4Desc').value }
             ];
-            localStorage.setItem('services', JSON.stringify(services));
+            supabase.from('services').upsert(services, { onConflict: 'service_number' }).then(() => {
+                msg();
+            });
+        }
+
+        function saveCats() {
+            const input = document.getElementById('cats').value;
+            const cats = input.split('\n').map(c => c.trim()).filter(c => c);
+            if (cats.length === 0) { alert('Ajouter au moins une catégorie'); return; }
+            localStorage.setItem('categories', JSON.stringify(cats));
             msg();
         }
     </script>
