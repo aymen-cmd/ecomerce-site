@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M2 PUB - Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+        header { background: #1a1a1a; color: white; padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; }
+        h1 { margin-bottom: 5px; }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; border: none; background: white; cursor: pointer; border-radius: 5px; font-weight: 600; }
+        .tab-btn.active { background: #2563eb; color: white; }
+
+        .tab { display: none; background: white; padding: 20px; border-radius: 8px; }
+        .tab.active { display: block; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; font-size: 14px; }
+        textarea { resize: vertical; min-height: 60px; }
+
+        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        button:hover { background: #1d4ed8; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        button.success { background: #28a745; }
+        button.success:hover { background: #218838; }
+
+        .msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; display: none; }
+
+        .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .product { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .product-img { width: 100%; height: 220px; background: #e0e0e0; border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 10px; color: #999; }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
+        .product input, .product textarea, .product select { margin-bottom: 8px; }
+        .product button { margin-top: 10px; }
+
+        .pagination { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .pagination button { padding: 8px 12px; }
+        .pagination button.active { background: #2563eb; }
+
+        .search { margin-bottom: 15px; }
+        .search input { width: 100%; padding: 10px; }
+
+        .page-info { text-align: center; color: #666; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 M2 PUB Admin</h1>
+            <p>Gérez votre portfolio</p>
+        </header>
+
+        <div class="msg" id="msg">✅ Enregistré!</div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('products')">Produits</button>
+            <button class="tab-btn" onclick="switchTab('categories')">Catégories</button>
+            <button class="tab-btn" onclick="switchTab('about')">À Propos</button>
+            <button class="tab-btn" onclick="switchTab('services')">Services</button>
+        </div>
+
+        <!-- PRODUCTS TAB -->
+        <div class="tab active" id="products">
+            <button class="success" style="margin-bottom: 15px;" onclick="addProduct()">➕ Ajouter un produit</button>
+
+            <div class="search">
+                <input type="text" placeholder="🔍 Chercher..." id="search" onkeyup="filterProds()">
+            </div>
+
+            <div class="products" id="prods"></div>
+            <div class="page-info" id="pageInfo"></div>
+            <div class="pagination" id="pag"></div>
+        </div>
+
+        <!-- CATEGORIES TAB -->
+        <div class="tab" id="categories">
+            <div class="form-group">
+                <label>Catégories (une par ligne)</label>
+                <textarea id="cats" placeholder="Cat 1&#10;Cat 2"></textarea>
+            </div>
+            <button class="success" onclick="saveCats()">💾 Enregistrer</button>
+        </div>
+
+        <!-- ABOUT TAB -->
+        <div class="tab" id="about">
+            <div class="form-group">
+                <label>Titre</label>
+                <input type="text" id="aboutTitle" placeholder="Votre Partenaire en Communication">
+            </div>
+            <div class="form-group">
+                <label>Description 1</label>
+                <textarea id="aboutDesc1" placeholder="Avec 14 ans d'expérience..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Description 2</label>
+                <textarea id="aboutDesc2" placeholder="Nous sommes spécialisés..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Description 3</label>
+                <textarea id="aboutDesc3" placeholder="Chaque projet..."></textarea>
+            </div>
+            <button class="success" onclick="saveAbout()">💾 Enregistrer</button>
+        </div>
+
+        <!-- SERVICES TAB -->
+        <div class="tab" id="services">
+            <div class="form-group">
+                <label>Service 1 - Titre</label>
+                <input type="text" id="service1Title" placeholder="🎨 Design Graphique">
+            </div>
+            <div class="form-group">
+                <label>Service 1 - Description</label>
+                <textarea id="service1Desc" placeholder="Création de designs percutants..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Service 2 - Titre</label>
+                <input type="text" id="service2Title" placeholder="👕 T-shirts Personnalisés">
+            </div>
+            <div class="form-group">
+                <label>Service 2 - Description</label>
+                <textarea id="service2Desc" placeholder="Impression de vêtements..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Service 3 - Titre</label>
+                <input type="text" id="service3Title" placeholder="📋 Panneaux Publicitaires">
+            </div>
+            <div class="form-group">
+                <label>Service 3 - Description</label>
+                <textarea id="service3Desc" placeholder="Conception et impression..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Service 4 - Titre</label>
+                <input type="text" id="service4Title" placeholder="📢 Communication Visuelle">
+            </div>
+            <div class="form-group">
+                <label>Service 4 - Description</label>
+                <textarea id="service4Desc" placeholder="Stratégies visuelles complètes..."></textarea>
+            </div>
+
+            <button class="success" onclick="saveServices()">💾 Enregistrer</button>
+        </div>
+    </div>
+
+    <script>
+        let all = [];
+        let filtered = [];
+        let page = 1;
+        const perPage = 6;
+
+        window.addEventListener('load', () => {
+            all = JSON.parse(localStorage.getItem('portfolio')) || [];
+            filtered = all;
+            renderCats();
+            renderAbout();
+            renderServices();
+            render();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function render() {
+            const div = document.getElementById('prods');
+            div.innerHTML = '';
+
+            if (filtered.length === 0) {
+                div.innerHTML = '<p>Aucun produit</p>';
+                document.getElementById('pag').innerHTML = '';
+                document.getElementById('pageInfo').innerHTML = '';
+                return;
+            }
+
+            const start = (page - 1) * perPage;
+            const items = filtered.slice(start, start + perPage);
+
+            items.forEach(item => {
+                const idx = all.indexOf(item);
+                const imgKey = `portfolio_image_${idx}`;
+                const img = localStorage.getItem(imgKey);
+                const cats = JSON.parse(localStorage.getItem('categories')) || [];
+
+                const el = document.createElement('div');
+                el.className = 'product';
+                el.innerHTML = `
+                    <div class="product-img" onclick="upload(${idx})">${img ? `<img src="${img}">` : '📷'}</div>
+                    <input type="text" value="${item.title}" onchange="upd(${idx}, 'title', this.value)">
+                    <select onchange="upd(${idx}, 'category', this.value)">
+                        ${cats.map(c => `<option ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
+                    </select>
+                    <textarea onchange="upd(${idx}, 'description', this.value)">${item.description}</textarea>
+                    <button class="danger" onclick="del(${idx})">🗑️ Supprimer</button>
+                `;
+                div.appendChild(el);
+            });
+
+            const pages = Math.ceil(filtered.length / perPage);
+            const pag = document.getElementById('pag');
+            pag.innerHTML = '';
+            for (let i = 1; i <= pages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = i === page ? 'active' : '';
+                btn.onclick = () => { page = i; render(); };
+                pag.appendChild(btn);
+            }
+
+            document.getElementById('pageInfo').textContent = `${start + 1}-${Math.min(start + perPage, filtered.length)} / ${filtered.length}`;
+        }
+
+        function addProduct() {
+            const cats = JSON.parse(localStorage.getItem('categories')) || ['Catégorie'];
+            all.push({ title: 'Nouveau', category: cats[0], description: 'Description' });
+            localStorage.setItem('portfolio', JSON.stringify(all));
+            msg();
+            filtered = all;
+            page = 1;
+            render();
+        }
+
+        function upload(idx) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > 600) { h = (h * 600) / w; w = 600; }
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        let q = 0.6;
+                        let data = canvas.toDataURL('image/jpeg', q);
+                        while (data.length > 150 * 1024 && q > 0.3) {
+                            q -= 0.05;
+                            data = canvas.toDataURL('image/jpeg', q);
+                        }
+                        localStorage.setItem(`portfolio_image_${idx}`, data);
+                        msg();
+                        render();
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        function upd(idx, field, val) {
+            all[idx][field] = val;
+            localStorage.setItem('portfolio', JSON.stringify(all));
+            msg();
+        }
+
+        function del(idx) {
+            if (confirm('Supprimer?')) {
+                all.splice(idx, 1);
+                localStorage.setItem('portfolio', JSON.stringify(all));
+                localStorage.removeItem(`portfolio_image_${idx}`);
+                msg();
+                filtered = all;
+                page = 1;
+                render();
+            }
+        }
+
+        function filterProds() {
+            const search = document.getElementById('search').value.toLowerCase();
+            filtered = all.filter(p => p.title.toLowerCase().includes(search) || p.description.toLowerCase().includes(search));
+            page = 1;
+            render();
+        }
+
+        function renderCats() {
+            const cats = JSON.parse(localStorage.getItem('categories')) || [];
+            document.getElementById('cats').value = cats.join('\n');
+        }
+
+        function saveCats() {
+            const input = document.getElementById('cats').value;
+            const cats = input.split('\n').map(c => c.trim()).filter(c => c);
+            if (cats.length === 0) { alert('Ajouter au moins une catégorie'); return; }
+            localStorage.setItem('categories', JSON.stringify(cats));
+            msg();
+        }
+
+        function msg() {
+            const el = document.getElementById('msg');
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 1500);
+        }
+
+        function renderAbout() {
+            const about = JSON.parse(localStorage.getItem('about')) || {
+                title: 'Votre Partenaire en Communication',
+                desc1: 'Avec 14 ans d\'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.',
+                desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
+                desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
+            };
+            document.getElementById('aboutTitle').value = about.title;
+            document.getElementById('aboutDesc1').value = about.desc1;
+            document.getElementById('aboutDesc2').value = about.desc2;
+            document.getElementById('aboutDesc3').value = about.desc3;
+        }
+
+        function saveAbout() {
+            const about = {
+                title: document.getElementById('aboutTitle').value,
+                desc1: document.getElementById('aboutDesc1').value,
+                desc2: document.getElementById('aboutDesc2').value,
+                desc3: document.getElementById('aboutDesc3').value
+            };
+            localStorage.setItem('about', JSON.stringify(about));
+            msg();
+        }
+
+        function renderServices() {
+            const services = JSON.parse(localStorage.getItem('services')) || [
+                { title: '🎨 Design Graphique', desc: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
+                { title: '👕 T-shirts Personnalisés', desc: 'Impression de vêtements haute qualité avec vos designs. Parfait pour l\'événementiel, le branding, et les cadeaux d\'entreprise.' },
+                { title: '📋 Panneaux Publicitaires', desc: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
+                { title: '📢 Communication Visuelle', desc: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
+            ];
+            document.getElementById('service1Title').value = services[0].title;
+            document.getElementById('service1Desc').value = services[0].desc;
+            document.getElementById('service2Title').value = services[1].title;
+            document.getElementById('service2Desc').value = services[1].desc;
+            document.getElementById('service3Title').value = services[2].title;
+            document.getElementById('service3Desc').value = services[2].desc;
+            document.getElementById('service4Title').value = services[3].title;
+            document.getElementById('service4Desc').value = services[3].desc;
+        }
+
+        function saveServices() {
+            const services = [
+                { title: document.getElementById('service1Title').value, desc: document.getElementById('service1Desc').value },
+                { title: document.getElementById('service2Title').value, desc: document.getElementById('service2Desc').value },
+                { title: document.getElementById('service3Title').value, desc: document.getElementById('service3Desc').value },
+                { title: document.getElementById('service4Title').value, desc: document.getElementById('service4Desc').value }
+            ];
+            localStorage.setItem('services', JSON.stringify(services));
+            msg();
+        }
+    </script>
+</body>
+</html>
