@@ -1,0 +1,1 @@
+- [M2 PUB Portfolio Site](m2pub-portfolio-site.md) — Modern portfolio website with admin panel, localStorage-based data persistence, category filtering, and modal product details. All French UI. Client can manage unlimited products with image compression (600px max, JPEG 60% quality). Public site has no admin access, only contact button in modals.

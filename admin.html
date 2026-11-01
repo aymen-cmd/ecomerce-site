@@ -60,9 +60,9 @@
         <div class="msg" id="msg">✅ Enregistré!</div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('products')">Produits</button>
-            <button class="tab-btn" onclick="switchTab('about')">À Propos</button>
-            <button class="tab-btn" onclick="switchTab('services')">Services</button>
+            <button class="tab-btn active" onclick="switchTab('products', this)">Produits</button>
+            <button class="tab-btn" onclick="switchTab('about', this)">À Propos</button>
+            <button class="tab-btn" onclick="switchTab('services', this)">Services</button>
         </div>
 
         <!-- PRODUCTS TAB -->
@@ -145,7 +145,9 @@
     <script>
         const SUPABASE_URL = 'https://tsqwsiqbhnxlkexkbpzx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_B41-ulTCnWxIATH0nedOkg_tZsMl_qE';
-        let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ✅ Renamed from `supabase` to `sb` to avoid redeclaring the global `supabase` from the CDN
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let all = [];
         let filtered = [];
@@ -158,15 +160,16 @@
             renderServices();
         });
 
-        function switchTab(tab) {
+        // ✅ `btn` passed explicitly so we don't rely on the global `event`
+        function switchTab(tab, btn) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
-            event.target.classList.add('active');
+            if (btn) btn.classList.add('active');
         }
 
         function loadPortfolio() {
-            supabase.from('portfolio').select('*').then(({ data, error }) => {
+            sb.from('portfolio').select('*').then(({ data, error }) => {
                 if (error) { console.error(error); return; }
                 all = data || [];
                 filtered = all;
@@ -187,19 +190,18 @@
 
             const start = (page - 1) * perPage;
             const items = filtered.slice(start, start + perPage);
+            const usedCats = [...new Set(all.map(i => i.category))];
 
             items.forEach(item => {
-                const usedCats = [...new Set(all.map(i => i.category))];
-
                 const el = document.createElement('div');
                 el.className = 'product';
                 el.innerHTML = `
                     <div class="product-img" onclick="upload(${item.id})">${item.image_data ? `<img src="${item.image_data}">` : '📷'}</div>
-                    <input type="text" value="${item.title}" onchange="upd(${item.id}, 'title', this.value)">
+                    <input type="text" value="${item.title ?? ''}" onchange="upd(${item.id}, 'title', this.value)">
                     <select onchange="upd(${item.id}, 'category', this.value)">
-                        ${usedCats.map(c => `<option ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
+                        ${usedCats.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
-                    <textarea onchange="upd(${item.id}, 'description', this.value)">${item.description}</textarea>
+                    <textarea onchange="upd(${item.id}, 'description', this.value)">${item.description ?? ''}</textarea>
                     <button class="danger" onclick="del(${item.id})">🗑️ Supprimer</button>
                 `;
                 div.appendChild(el);
@@ -222,7 +224,7 @@
         function addProduct() {
             const usedCats = [...new Set(all.map(i => i.category))];
             const cat = usedCats.length > 0 ? usedCats[0] : 'Design';
-            supabase.from('portfolio').insert([{ title: 'Nouveau', category: cat, description: 'Description' }]).then(() => {
+            sb.from('portfolio').insert([{ title: 'Nouveau', category: cat, description: 'Description' }]).then(() => {
                 loadPortfolio();
                 msg();
             });
@@ -251,7 +253,7 @@
                             q -= 0.05;
                             data = canvas.toDataURL('image/jpeg', q);
                         }
-                        supabase.from('portfolio').update({ image_data: data }).eq('id', id).then(() => {
+                        sb.from('portfolio').update({ image_data: data }).eq('id', id).then(() => {
                             loadPortfolio();
                             msg();
                         });
@@ -264,7 +266,7 @@
         }
 
         function upd(id, field, val) {
-            supabase.from('portfolio').update({ [field]: val }).eq('id', id).then(() => {
+            sb.from('portfolio').update({ [field]: val }).eq('id', id).then(() => {
                 loadPortfolio();
                 msg();
             });
@@ -272,7 +274,7 @@
 
         function del(id) {
             if (confirm('Supprimer?')) {
-                supabase.from('portfolio').delete().eq('id', id).then(() => {
+                sb.from('portfolio').delete().eq('id', id).then(() => {
                     loadPortfolio();
                     msg();
                 });
@@ -281,16 +283,19 @@
 
         function filterProds() {
             const search = document.getElementById('search').value.toLowerCase();
-            filtered = all.filter(p => p.title.toLowerCase().includes(search) || p.description.toLowerCase().includes(search));
+            filtered = all.filter(p =>
+                (p.title || '').toLowerCase().includes(search) ||
+                (p.description || '').toLowerCase().includes(search)
+            );
             page = 1;
             render();
         }
 
         function renderAbout() {
-            supabase.from('about').select('*').limit(1).then(({ data, error }) => {
+            sb.from('about').select('*').limit(1).then(({ data, error }) => {
                 if (error || !data || data.length === 0) {
                     document.getElementById('aboutTitle').value = 'Votre Partenaire en Communication';
-                    document.getElementById('aboutDesc1').value = 'Avec 14 ans d\'expérience...';
+                    document.getElementById('aboutDesc1').value = "Avec 14 ans d'expérience...";
                     document.getElementById('aboutDesc2').value = 'Nous sommes spécialisés...';
                     document.getElementById('aboutDesc3').value = 'Chaque projet...';
                     return;
@@ -311,11 +316,11 @@
                 desc2: document.getElementById('aboutDesc2').value,
                 desc3: document.getElementById('aboutDesc3').value
             };
-            supabase.from('about').upsert([about]).then(() => msg());
+            sb.from('about').upsert([about]).then(() => msg());
         }
 
         function renderServices() {
-            supabase.from('services').select('*').order('service_number', { ascending: true }).then(({ data, error }) => {
+            sb.from('services').select('*').order('service_number', { ascending: true }).then(({ data, error }) => {
                 if (error || !data || data.length === 0) {
                     const defaults = [
                         { service_number: 1, title: '🎨 Design Graphique', description: 'Création de designs percutants...' },
@@ -330,8 +335,11 @@
                     return;
                 }
                 data.forEach((s, i) => {
-                    document.getElementById(`service${i+1}Title`).value = s.title || '';
-                    document.getElementById(`service${i+1}Desc`).value = s.description || '';
+                    const idx = s.service_number || (i + 1);
+                    const titleEl = document.getElementById(`service${idx}Title`);
+                    const descEl = document.getElementById(`service${idx}Desc`);
+                    if (titleEl) titleEl.value = s.title || '';
+                    if (descEl) descEl.value = s.description || '';
                 });
             });
         }
@@ -343,7 +351,7 @@
                 { service_number: 3, title: document.getElementById('service3Title').value, description: document.getElementById('service3Desc').value },
                 { service_number: 4, title: document.getElementById('service4Title').value, description: document.getElementById('service4Desc').value }
             ];
-            supabase.from('services').upsert(services, { onConflict: 'service_number' }).then(() => msg());
+            sb.from('services').upsert(services, { onConflict: 'service_number' }).then(() => msg());
         }
 
         function msg() {
