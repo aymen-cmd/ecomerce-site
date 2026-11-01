@@ -145,7 +145,7 @@
     <script>
         const SUPABASE_URL = 'https://tsqwsiqbhnxlkexkbpzx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_B41-ulTCnWxIATH0nedOkg_tZsMl_qE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let all = [];
         let filtered = [];
