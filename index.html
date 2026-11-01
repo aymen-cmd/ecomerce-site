@@ -501,12 +501,19 @@
                     title: data[0].title || fallback.title,
                     desc1: data[0].desc1 || fallback.desc1,
                     desc2: data[0].desc2 || fallback.desc2,
-                    desc3: data[0].desc3 || fallback.desc3
+                    desc3: data[0].desc3 || fallback.desc3,
+                    image_data: data[0].image_data || null
                 };
                 document.getElementById('aboutTitle').textContent = about.title;
                 document.getElementById('aboutDesc1').textContent = about.desc1;
                 document.getElementById('aboutDesc2').textContent = about.desc2;
                 document.getElementById('aboutDesc3').textContent = about.desc3;
+
+                // Load image if available
+                const imgDiv = document.querySelector('.about-image');
+                if (about.image_data) {
+                    imgDiv.innerHTML = `<img src="${about.image_data}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+                }
             });
         }
 
