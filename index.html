@@ -527,17 +527,13 @@
                 ];
 
                 const rows = (error || !data || data.length === 0) ? fallback : data;
-                const merged = [0, 1, 2, 3].map(i => {
-                    const row = rows.find(r => (r.service_number || (i + 1)) === i + 1);
-                    return {
-                        title: row?.title || fallback[i].title,
-                        description: row?.description || fallback[i].description
-                    };
-                });
 
-                merged.forEach((s, i) => {
-                    document.getElementById(`service${i + 1}Title`).textContent = s.title;
-                    document.getElementById(`service${i + 1}Desc`).textContent = s.description;
+                rows.forEach((s, i) => {
+                    const idx = i + 1;
+                    const titleEl = document.getElementById(`service${idx}Title`);
+                    const descEl = document.getElementById(`service${idx}Desc`);
+                    if (titleEl) titleEl.textContent = s.title || '';
+                    if (descEl) descEl.textContent = s.description || '';
                 });
             });
         }
