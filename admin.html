@@ -105,6 +105,10 @@
                 <input type="text" id="aboutTitle" placeholder="Votre Partenaire en Communication">
             </div>
             <div class="form-group">
+                <label>Image</label>
+                <div id="aboutImagePreview" style="width: 100%; height: 250px; background: #e0e0e0; border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 10px; color: #999;" onclick="uploadAboutImage()">📷</div>
+            </div>
+            <div class="form-group">
                 <label>Description 1</label>
                 <textarea id="aboutDesc1"></textarea>
             </div>
@@ -325,7 +329,46 @@
                 document.getElementById('aboutDesc1').value = about.desc1 || '';
                 document.getElementById('aboutDesc2').value = about.desc2 || '';
                 document.getElementById('aboutDesc3').value = about.desc3 || '';
+                if (about.image_data) {
+                    const preview = document.getElementById('aboutImagePreview');
+                    preview.innerHTML = `<img src="${about.image_data}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;">`;
+                }
             });
+        }
+
+        function uploadAboutImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > 600) { h = (h * 600) / w; w = 600; }
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        let q = 0.6;
+                        let data = canvas.toDataURL('image/jpeg', q);
+                        while (data.length > 150 * 1024 && q > 0.3) {
+                            q -= 0.05;
+                            data = canvas.toDataURL('image/jpeg', q);
+                        }
+                        const preview = document.getElementById('aboutImagePreview');
+                        preview.innerHTML = `<img src="${data}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 5px;">`;
+                        window.aboutImageData = data;
+                        msg();
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
         }
 
         function saveAbout() {
@@ -336,6 +379,9 @@
                 desc2: document.getElementById('aboutDesc2').value,
                 desc3: document.getElementById('aboutDesc3').value
             };
+            if (window.aboutImageData) {
+                about.image_data = window.aboutImageData;
+            }
             sb.from('about').upsert([about]).then(() => msg());
         }
 
