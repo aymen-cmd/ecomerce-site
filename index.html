@@ -280,7 +280,7 @@
     <script>
         const SUPABASE_URL = 'https://tsqwsiqbhnxlkexkbpzx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_B41-ulTCnWxIATH0nedOkg_tZsMl_qE';
-        let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let allItems = [];
         let filteredItems = [];
@@ -295,8 +295,8 @@
         });
 
         function loadData() {
-            supabase.from('portfolio').select('*').then(({ data, error }) => {
-                if (error) console.error(error);
+            sb.from('portfolio').select('*').then(({ data, error }) => {
+                if (error) { console.error(error); return; }
                 allItems = data || [];
                 filteredItems = allItems;
                 renderFilters();
@@ -314,24 +314,23 @@
             allBtn.onclick = () => { currentFilter = 'all'; currentPage = 1; filterGallery(); renderFilters(); renderGallery(); };
             filterDiv.appendChild(allBtn);
 
-            const categories = JSON.parse(localStorage.getItem('categories')) || [];
-            const usedCats = [...new Set(allItems.map(i => i.category))];
+            const usedCats = [...new Set(allItems.map(i => i.category).filter(Boolean))];
 
-            categories.forEach(cat => {
-                if (usedCats.includes(cat)) {
-                    const btn = document.createElement('button');
-                    btn.textContent = cat;
-                    btn.className = currentFilter === cat ? 'active' : '';
-                    btn.onclick = () => { currentFilter = cat; currentPage = 1; filterGallery(); renderFilters(); renderGallery(); };
-                    filterDiv.appendChild(btn);
-                }
+            usedCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat;
+                btn.className = currentFilter === cat ? 'active' : '';
+                btn.onclick = () => { currentFilter = cat; currentPage = 1; filterGallery(); renderFilters(); renderGallery(); };
+                filterDiv.appendChild(btn);
             });
         }
 
         function filterGallery() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             filteredItems = allItems.filter(item => {
-                const matchSearch = item.title.toLowerCase().includes(search) || item.description.toLowerCase().includes(search);
+                const title = (item.title ?? '').toLowerCase();
+                const desc = (item.description ?? '').toLowerCase();
+                const matchSearch = title.includes(search) || desc.includes(search);
                 const matchFilter = currentFilter === 'all' || item.category === currentFilter;
                 return matchSearch && matchFilter;
             });
@@ -350,6 +349,7 @@
             if (filteredItems.length === 0) {
                 gallery.innerHTML = '<p>Aucun produit</p>';
                 document.getElementById('pagination').innerHTML = '';
+                document.getElementById('pageInfo').textContent = '';
                 return;
             }
 
@@ -365,9 +365,9 @@
                 div.innerHTML = `
                     <div class="item-img">${item.image_data ? `<img src="${item.image_data}">` : ''}</div>
                     <div class="item-info">
-                        <div class="item-title">${item.title}</div>
-                        <div class="item-cat">${item.category}</div>
-                        <div class="item-desc">${item.description}</div>
+                        <div class="item-title">${item.title ?? ''}</div>
+                        <div class="item-cat">${item.category ?? ''}</div>
+                        <div class="item-desc">${item.description ?? ''}</div>
                     </div>
                 `;
                 gallery.appendChild(div);
@@ -394,9 +394,9 @@
             const item = allItems.find(i => i.id === id);
             if (!item) return;
 
-            document.getElementById('modalTitle').textContent = item.title;
-            document.getElementById('modalCat').textContent = item.category;
-            document.getElementById('modalDesc').textContent = item.description;
+            document.getElementById('modalTitle').textContent = item.title ?? '';
+            document.getElementById('modalCat').textContent = item.category ?? '';
+            document.getElementById('modalDesc').textContent = item.description ?? '';
             document.getElementById('modalImg').innerHTML = item.image_data ? `<img src="${item.image_data}">` : '';
 
             document.getElementById('modal').classList.add('show');
@@ -412,40 +412,50 @@
         }
 
         function loadAbout() {
-            const about = JSON.parse(localStorage.getItem('about')) || {
-                title: 'Votre Partenaire en Communication',
-                desc1: 'Avec 14 ans d\'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.',
-                desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
-                desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
-            };
-            document.getElementById('aboutTitle').textContent = about.title;
-            document.getElementById('aboutDesc1').textContent = about.desc1;
-            document.getElementById('aboutDesc2').textContent = about.desc2;
-            document.getElementById('aboutDesc3').textContent = about.desc3;
+            sb.from('about').select('*').limit(1).then(({ data, error }) => {
+                const fallback = {
+                    title: 'Votre Partenaire en Communication',
+                    desc1: "Avec 14 ans d'expérience, M2 PUB crée avec audace et réflexion une communication authentique et efficace pour vos besoins.",
+                    desc2: 'Nous sommes spécialisés dans la création de designs graphiques percutants, la personnalisation de vêtements, et la conception de panneaux publicitaires qui captivent votre audience.',
+                    desc3: 'Chaque projet est une opportunité de transformer votre vision en réalité visuelle impactante.'
+                };
+                const about = (error || !data || data.length === 0) ? fallback : {
+                    title: data[0].title || fallback.title,
+                    desc1: data[0].desc1 || fallback.desc1,
+                    desc2: data[0].desc2 || fallback.desc2,
+                    desc3: data[0].desc3 || fallback.desc3
+                };
+                document.getElementById('aboutTitle').textContent = about.title;
+                document.getElementById('aboutDesc1').textContent = about.desc1;
+                document.getElementById('aboutDesc2').textContent = about.desc2;
+                document.getElementById('aboutDesc3').textContent = about.desc3;
+            });
         }
 
         function loadServices() {
-            const services = JSON.parse(localStorage.getItem('services')) || [
-                { title: '🎨 Design Graphique', desc: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
-                { title: '👕 T-shirts Personnalisés', desc: 'Impression de vêtements haute qualité avec vos designs. Parfait pour l\'événementiel, le branding, et les cadeaux d\'entreprise.' },
-                { title: '📋 Panneaux Publicitaires', desc: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
-                { title: '📢 Communication Visuelle', desc: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
-            ];
-            document.getElementById('service1Title').textContent = services[0].title;
-            document.getElementById('service1Desc').textContent = services[0].desc;
-            document.getElementById('service2Title').textContent = services[1].title;
-            document.getElementById('service2Desc').textContent = services[1].desc;
-            document.getElementById('service3Title').textContent = services[2].title;
-            document.getElementById('service3Desc').textContent = services[2].desc;
-            document.getElementById('service4Title').textContent = services[3].title;
-            document.getElementById('service4Desc').textContent = services[3].desc;
-        }
+            sb.from('services').select('*').order('service_number', { ascending: true }).then(({ data, error }) => {
+                const fallback = [
+                    { title: '🎨 Design Graphique', description: 'Création de designs percutants adaptés à votre identité de marque. Logos, illustrations, supports numériques et imprimés.' },
+                    { title: '👕 T-shirts Personnalisés', description: "Impression de vêtements haute qualité avec vos designs. Parfait pour l'événementiel, le branding, et les cadeaux d'entreprise." },
+                    { title: '📋 Panneaux Publicitaires', description: 'Conception et impression de panneaux attractifs. Affiches, signalétique, bâches publicitaires pour un impact maximal.' },
+                    { title: '📢 Communication Visuelle', description: 'Stratégies visuelles complètes : branding, impression, packaging. Une approche globale pour votre communication.' }
+                ];
 
-        window.addEventListener('storage', () => {
-            loadData();
-            loadAbout();
-            loadServices();
-        });
+                const rows = (error || !data || data.length === 0) ? fallback : data;
+                const merged = [0, 1, 2, 3].map(i => {
+                    const row = rows.find(r => (r.service_number || (i + 1)) === i + 1);
+                    return {
+                        title: row?.title || fallback[i].title,
+                        description: row?.description || fallback[i].description
+                    };
+                });
+
+                merged.forEach((s, i) => {
+                    document.getElementById(`service${i + 1}Title`).textContent = s.title;
+                    document.getElementById(`service${i + 1}Desc`).textContent = s.description;
+                });
+            });
+        }
     </script>
 </body>
 </html>
