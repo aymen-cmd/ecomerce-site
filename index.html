@@ -115,14 +115,92 @@
 
         /* RESPONSIVE */
         @media (max-width: 768px) {
+            header .container { flex-direction: column; gap: 15px; }
+            .logo { font-size: 24px; }
+            nav { gap: 15px; font-size: 14px; }
+
             .about-content { grid-template-columns: 1fr; }
-            .hero { padding: 80px 20px; }
+            .about-image { height: 250px; }
+
+            .hero { padding: 60px 20px; }
             .hero h1 { font-size: 36px; }
-            section h2 { font-size: 32px; }
-            nav { gap: 20px; }
-            .gallery { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-            .item-img { height: 300px; }
-            .modal-img { height: 350px; }
+            .hero p { font-size: 16px; }
+            .hero a { padding: 12px 32px; font-size: 14px; }
+
+            section { padding: 40px 20px; }
+            section h2 { font-size: 32px; margin-bottom: 25px; }
+
+            .services-grid { grid-template-columns: 1fr; gap: 20px; }
+            .service-card { padding: 20px; }
+
+            .gallery { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+            .item-img { height: 200px; }
+            .item-info { padding: 12px; }
+            .item-title { font-size: 14px; }
+            .item-desc { font-size: 12px; }
+
+            .modal-content { width: 95%; max-height: 90vh; }
+            .modal-body { padding: 20px; }
+            .modal-img { height: 300px; }
+            .modal-title { font-size: 22px; }
+            .modal-desc { font-size: 14px; }
+            .modal-footer { flex-direction: column; }
+
+            .contact-items { grid-template-columns: 1fr; gap: 15px; }
+            .contact-form { margin: 30px 20px; }
+            .contact-form h3 { font-size: 20px; }
+
+            .search input { max-width: 100%; }
+            .filters { gap: 8px; }
+            .filters button { padding: 8px 16px; font-size: 13px; }
+
+            .pagination { gap: 6px; }
+            .pagination button { padding: 8px 12px; font-size: 13px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 15px; }
+
+            .logo { font-size: 20px; }
+            nav { gap: 10px; font-size: 12px; }
+
+            .hero { padding: 40px 15px; }
+            .hero h1 { font-size: 28px; }
+            .hero p { font-size: 14px; }
+
+            section { padding: 30px 15px; }
+            section h2 { font-size: 24px; }
+
+            .about-text h3 { font-size: 20px; }
+            .about-text p { font-size: 14px; }
+            .about-image { height: 200px; }
+
+            .service-card { padding: 15px; }
+            .service-card h3 { font-size: 16px; }
+            .service-card p { font-size: 13px; }
+
+            .gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+            .item-img { height: 150px; }
+            .item-info { padding: 10px; }
+            .item-title { font-size: 12px; }
+            .item-desc { font-size: 11px; }
+
+            .modal-content { width: 98%; }
+            .modal-header { padding: 15px; }
+            .modal-body { padding: 15px; }
+            .modal-img { height: 250px; margin-bottom: 15px; }
+            .modal-title { font-size: 18px; }
+            .modal-close { font-size: 24px; }
+
+            .contact-item { padding: 15px; }
+            .contact-item h3 { font-size: 16px; }
+            .contact-form h3 { font-size: 18px; }
+            .form-group button { padding: 12px; font-size: 14px; }
+
+            .search input { padding: 12px 15px; }
+            .filters button { padding: 8px 12px; font-size: 12px; }
+
+            footer { padding: 25px 15px; }
         }
     </style>
 </head>

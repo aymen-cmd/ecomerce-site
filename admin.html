@@ -48,6 +48,55 @@
         .search input { width: 100%; padding: 10px; }
 
         .page-info { text-align: center; color: #666; margin: 10px 0; }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            header { padding: 15px 0; }
+            h1 { font-size: 22px; }
+            header p { font-size: 14px; }
+
+            .tabs { gap: 8px; }
+            .tab-btn { padding: 8px 15px; font-size: 12px; }
+
+            input, textarea, select { padding: 8px; font-size: 14px; }
+            button { padding: 8px 15px; font-size: 14px; }
+
+            .products { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+            .product { padding: 12px; }
+            .product-img { height: 150px; }
+
+            .search input { padding: 10px; }
+
+            .msg { padding: 8px; font-size: 13px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 10px; }
+            header { padding: 10px 0; }
+            h1 { font-size: 18px; }
+            header p { font-size: 12px; }
+
+            .tabs { flex-direction: column; gap: 5px; }
+            .tab-btn { width: 100%; padding: 10px; font-size: 13px; }
+
+            .tab { padding: 15px; }
+
+            input, textarea, select { padding: 10px; font-size: 14px; }
+            button { padding: 10px; font-size: 13px; }
+
+            .products { grid-template-columns: 1fr; }
+            .product-img { height: 120px; }
+
+            label { font-size: 13px; }
+            textarea { min-height: 80px; }
+
+            .pagination { gap: 4px; }
+            .pagination button { padding: 6px 10px; font-size: 12px; }
+
+            #categoryForm { margin-bottom: 10px; }
+            #categoryList { gap: 8px; }
+        }
     </style>
 </head>
 <body>
