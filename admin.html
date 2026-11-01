@@ -61,6 +61,7 @@
 
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('products', this)">Produits</button>
+            <button class="tab-btn" onclick="switchTab('categories', this)">Catégories</button>
             <button class="tab-btn" onclick="switchTab('about', this)">À Propos</button>
             <button class="tab-btn" onclick="switchTab('services', this)">Services</button>
         </div>
@@ -76,6 +77,25 @@
             <div class="products" id="prods"></div>
             <div class="page-info" id="pageInfo"></div>
             <div class="pagination" id="pag"></div>
+        </div>
+
+        <!-- CATEGORIES TAB -->
+        <div class="tab" id="categories">
+            <button class="success" style="margin-bottom: 15px;" onclick="showAddCategory()">➕ Ajouter une catégorie</button>
+
+            <div id="categoryForm" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div class="form-group">
+                    <label>Nom de la catégorie</label>
+                    <input type="text" id="categoryName" placeholder="Ex: Design, Photos...">
+                </div>
+                <button class="success" onclick="saveCategory()">💾 Créer</button>
+                <button onclick="hideAddCategory()" style="background: #6c757d; margin-left: 10px;">Annuler</button>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <h3>Catégories existantes</h3>
+                <div id="categoryList" style="display: grid; gap: 10px; margin-top: 10px;"></div>
+            </div>
         </div>
 
         <!-- ABOUT TAB -->
@@ -359,6 +379,80 @@
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 1500);
         }
+
+        // Category Management
+        function showAddCategory() {
+            document.getElementById('categoryForm').style.display = 'block';
+        }
+
+        function hideAddCategory() {
+            document.getElementById('categoryForm').style.display = 'none';
+            document.getElementById('categoryName').value = '';
+        }
+
+        function saveCategory() {
+            const name = document.getElementById('categoryName').value.trim();
+            if (!name) {
+                alert('Entrez un nom de catégorie');
+                return;
+            }
+            sb.from('categories').insert([{ name: name }]).then(({ error }) => {
+                if (error) {
+                    alert('Erreur: ' + error.message);
+                    return;
+                }
+                msg();
+                hideAddCategory();
+                loadCategories();
+            });
+        }
+
+        function loadCategories() {
+            sb.from('categories').select('*').then(({ data, error }) => {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+                const list = document.getElementById('categoryList');
+                list.innerHTML = '';
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<p>Aucune catégorie</p>';
+                    return;
+                }
+                data.forEach(cat => {
+                    const el = document.createElement('div');
+                    el.style.display = 'flex';
+                    el.style.justifyContent = 'space-between';
+                    el.style.alignItems = 'center';
+                    el.style.background = '#f9f9f9';
+                    el.style.padding = '10px';
+                    el.style.borderRadius = '5px';
+                    el.innerHTML = `
+                        <span>${cat.name}</span>
+                        <button class="danger" onclick="deleteCategory(${cat.id})" style="padding: 5px 10px;">🗑️ Supprimer</button>
+                    `;
+                    list.appendChild(el);
+                });
+            });
+        }
+
+        function deleteCategory(id) {
+            if (confirm('Supprimer cette catégorie?')) {
+                sb.from('categories').delete().eq('id', id).then(() => {
+                    msg();
+                    loadCategories();
+                });
+            }
+        }
+
+        // Load categories when page loads
+        window.addEventListener('load', () => {
+            loadPortfolio();
+            renderAbout();
+            renderServices();
+            loadCategories();
+        });
     </script>
+    
 </body>
 </html>
